@@ -1,0 +1,24 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'com.tk.nativeclient'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.tk.nativeclient'
+        minSdk 26
+        targetSdk 35
+        versionCode 1121
+        versionName '45.3.17'
+    }
+
+    buildTypes {
+        debug { debuggable true }
+        release { minifyEnabled false }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

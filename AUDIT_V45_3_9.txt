@@ -1,0 +1,70 @@
+TikTokNative V45.3.9 PROFILE / FEED RECOVERY LOCK
+Date: 2026-10-02
+
+Baseline
+- Actual complete project: V45.3.8 ROUTE RETURN / STATE LOCK.
+- Continues the V45.2.2/V45.3.x stable branch; no rebase to V49/V50/V52/V54.
+- No Gradle build was run.
+
+Frozen / preserved
+- Single WebView.
+- Desktop Chrome identity for /foryou, /following and /friends.
+- Mobile identity for search/profile/LIVE/inbox/upload and other secondary routes.
+- wideViewport=false and the existing WebView presentation contract.
+- TikTok owns ordinary vertical Feed scrolling and playback.
+- V45.2.2 Feed CSS geometry remains byte-for-byte unchanged.
+- No MutationObserver, setInterval, cloneNode, JavaScript History API replacement, dual WebView, GeckoView, persistent Feed scanner, poster stripping, or whole-page redraw.
+- Long press ~430 ms -> 2x and horizontal seek remain exact-/foryou scoped.
+- V45.3.5 comment/LIVE narrowing, V45.3.6 promotion suppression, V45.3.7 hidden-media filtering and V45.3.8 route-return logic remain intact.
+
+Source-confirmed repairs in V45.3.9
+1. Own-profile post taps no longer destroy own-profile ownership.
+   The V45.3.8 bridge treated every anchor whose href began with /@ as an external profile. TikTok post routes such as /@user/video/<id> and /@user/photo/<id> also begin with /@, so tapping a post from the user's own profile could call externalProfileOpened() before navigation and clear ownProfileRoute. That made the V45.3.8 video/photo ownership-preservation gate ineffective in this path. The bridge now changes profile ownership only for a bare trusted TikTok /@user profile path.
+
+2. Relative and absolute profile links use the same narrow classifier.
+   The new click check resolves the clicked anchor through URL(), verifies a TikTok host, and accepts only /^\/@[^/]+\/?$/. Post, photo and LIVE descendants are explicitly excluded; non-TikTok hosts cannot change native profile ownership.
+
+3. Process/Activity recreation no longer restores serialized Following/Friends Feed DOM.
+   V45.3.8 blocked serialized restore only for /foryou because replaying a saved Feed DOM can show the same already-rendered cards again. /following and /friends use the same desktop Feed engine but were still restored from WebView state. V45.3.9 applies the freshness rule to all three Feed routes and clean-loads the same canonical tab instead of restoring its old DOM.
+
+4. Feed-tab recreation preserves the selected tab while requesting fresh content.
+   A restored /following session clean-loads /following; /friends clean-loads /friends; root or /foryou clean-loads /foryou. The fix does not collapse every recreated Feed state back to For You.
+
+5. Cold-start recovery callbacks are generation-fenced.
+   The bounded first-card recovery posts delayed steps at 420/1200/2600/5600 ms, plus optional follow-up checks. V45.3.8 could reset/rebuild the WebView while an older delayed step was still queued, allowing that stale callback to act on the replacement page. V45.3.9 assigns the chain a generation token and invalidates it on clean Feed reload, renderer rebuild, navigation away from /foryou, and explicit comment/search overlay entry.
+
+6. The guarded auto-advance is now literally first-card-only.
+   The previous stall inspection selected the largest currently visible Feed article. If the user manually swiped to a later card before the 5.6 s recovery check, that later card could still be treated as the "first" recovery target. V45.3.9 refuses auto-advance unless the currently visible article is still the first Feed article in the bounded recovery list. Manual swiping therefore disables this one-time auto-skip path for later cards.
+
+7. TikTok intent fallbacks keep the correct browser identity.
+   browser_fallback_url previously called web.loadUrl() directly, bypassing the Desktop-vs-Mobile route identity gate. A TikTok fallback to profile/detail/search could briefly load with the wrong UA and require later reconciliation. Trusted TikTok fallback URLs now go through openRouteWithIdentity(...); non-TikTok HTTP(S) fallback behavior is unchanged.
+
+8. Download requests reuse the active page/request User-Agent.
+   The DownloadListener previously forced DESKTOP_UA even when a download originated from a Mobile-UA secondary page. It now prefers the WebView-provided request UA, then the current WebView UA, then the mode fallback. Cookies remain attached as before.
+
+Static gates
+- app/build.gradle: versionCode 1113 / versionName 45.3.9.
+- Single WebView constructor.
+- bridge_hook.js parses with node --check.
+- 14 Android XML resources parse successfully.
+- Java raw brace and parenthesis counts are balanced.
+- javac parse attempt reaches missing Android SDK symbols only; no syntax diagnostic such as illegal start, expected token, unclosed construct, or unexpected end was found.
+- bridge_hook.js: MutationObserver=0, setInterval=0, cloneNode=0, JavaScript History API replacement=0.
+- Exactly one preventDefault() path remains, confined to active horizontal progress seeking.
+- bridge_hook.js querySelectorAll count remains 3.
+- No generic LIVE next/previous clicker and no wildcard document-wide LIVE class scan.
+- Old broad a[href^="/@"] external-profile trigger is absent.
+- Feed CSS geometry prefix SHA256 remains 63ea301f29339cc06496b27208305e5d9ec0cc7103d853d2435cc724e5d243e0, identical to the recorded V45.2.2 baseline.
+- Entire mobile_shell.css is byte-for-byte unchanged from V45.3.8.
+
+Intentionally unchanged
+- Desktop Feed UA/data path and TikTok's ordinary vertical swipe ownership.
+- Feed card geometry, video fit, action rail, caption placement and bottom/top shell measurements.
+- TikTok mobile secondary-page DOM; Search/profile/LIVE remain real TikTok pages rather than recreated native pages.
+- Comment route/state strategy except for invalidating an obsolete cold-start recovery chain when a comment/search overlay takes ownership.
+- LIVE room switching fallback and LIVE close-to-origin history logic.
+- No transition-cover/black-frame masking without device-timing evidence.
+
+Validation status
+- Static/source-audited candidate only. No Gradle build was run.
+- Highest-value real-device checks remain: long mixed Feed scrolling; own profile -> video/photo -> Back; Following/Friends process recreation freshness; quick manual swipe during the first 6 seconds (must not later auto-skip the user's current card); comment open during cold start; Search/profile/LIVE return to the exact origin; LIVE multi-room switch/close; progress drag and long-press 2x.

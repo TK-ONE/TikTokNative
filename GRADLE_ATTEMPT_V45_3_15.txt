@@ -1,0 +1,10 @@
+TikTokNative V45.3.15 Gradle attempt
+UTC 2026-10-02T06:02:19Z
+
+$ ./gradlew --no-daemon --stacktrace :app:assembleDebug
+bash: line 7: ./gradlew: No such file or directory
+exit=127
+
+$ gradle --no-daemon --stacktrace :app:assembleDebug
+bash: line 9: gradle: command not found
+exit=127

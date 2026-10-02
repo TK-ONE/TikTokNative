@@ -1,0 +1,62 @@
+TikTokNative V45.3.15 ORIGINAL MOBILE REFERENCE LOCK
+Date: 2026-10-02
+
+Baseline
+- Actual complete project: V45.3.14 RECENT FEED DEDUP LOCK / GitHub-ready.
+- New visual evidence: user-supplied 34.1596 s recording of original TikTok mobile UI (2026-10-02).
+- Continues V45.2.2/V45.3.x stable single-WebView branch; no rebase to V49/V50/V52/V54.
+
+Evidence visible in the supplied reference recording
+- Top feed shell shows LIVE at left, then three visible center labels: 社区 / 关注 / 推荐, with Search at right.
+- LIVE is rendered as a compact TV-style LIVE control, not a wide rounded pill.
+- Landscape source video is fully visible with black letterbox; portrait source video fills the mobile canvas.
+- Right action rail remains near the lower-right with the spinning audio/avatar disc above the bottom navigation.
+- Lower-left copy uses a bold author line, a compact two-line description with native “展开” behavior, and a smaller music line.
+- The feed shell remains visually present while the original mobile comment sheet overlays the lower part of the Feed.
+
+V45.3.15 changes
+1. Removed only the extra visible 好友 tab from the custom top shell.
+   - /friends route handling is retained in the state machine; this is a presentation change only.
+   - Center-tab padding is adjusted so the remaining 社区 / 关注 / 推荐 labels do not spread too far apart.
+
+2. Replaced the wide LIVE pill with a compact TV-style LIVE control built from native Android views.
+   - Keeps the existing nav-live resolution/fallback behavior.
+   - No new WebView or DOM dependency.
+
+3. Tuned top-tab typography/underline to the supplied mobile reference.
+   - Slightly smaller 15.2sp label size.
+   - 24dp x 2dp selected underline.
+
+4. Refined lower-left Feed copy presentation without replacing TikTok content.
+   - Overlay bottom: 88 CSS px; left: 12; right: 74.
+   - Author: 16px / 20px / bold.
+   - Description: 14px / 19px; existing two-line clamp retained.
+   - Music: 13px / 18px with 5px top spacing.
+   - Added a modest text shadow for legibility over portrait media.
+
+5. Desktop Feed comment state keeps the native top/bottom shell visible behind the sheet.
+   - This follows the supplied original-mobile recording.
+   - Mobile-secondary comment/page routes still use TikTok’s own chrome and do not force the Feed shell.
+
+Frozen / intentionally unchanged
+- Desktop Chrome identity for /foryou, /following, /friends.
+- Mobile identity for Search/profile/LIVE/inbox/upload and secondary routes.
+- TikTok owns ordinary vertical feed scrolling/playback.
+- V45.3.12 intrinsic-aspect handling is unchanged: source wider than 9:16 uses contain/black letterbox; 9:16-or-taller uses cover.
+- V45.3.13 6px media-bottom guard is unchanged.
+- V45.3.14 exact recent-post dedup is unchanged.
+- Right action rail placement remains right 8 / bottom 86.
+- No MutationObserver, setInterval, cloneNode or History API replacement.
+
+Static validation
+- app/build.gradle: versionCode 1119 / versionName 45.3.15.
+- GitHub workflow: android-actions/setup-android@v4, Gradle 8.9, JDK 17, Android SDK 35.
+- bridge_hook.js: node --check PASS.
+- 14 Android XML resources parse PASS.
+- Java string/comment-aware delimiter audit PASS: (), {}, [] balanced.
+- javac reaches missing Android SDK/package symbols; no syntax-pattern diagnostics found.
+- Single WebView constructor remains.
+- bridge_hook.js counts: MutationObserver=0, setInterval=0, cloneNode=0, querySelectorAll=3, preventDefault=1.
+
+Validation status
+- Source/static audited candidate. Final behavior still needs the GitHub Gradle build and a short real-device comparison against the supplied reference recording.

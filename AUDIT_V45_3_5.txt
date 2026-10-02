@@ -1,0 +1,103 @@
+TikTokNative V45.3.5 COMMENT ROUTE / LIVE / GESTURE LOCK
+Date: 2026-10-01
+
+Purpose
+- Continue directly from V45.3.4; do not restart and do not rebase to V49/V50.
+- Preserve the V45.2.2 Desktop-Chrome /foryou data path and feed geometry.
+- Repair only source-confirmed state/route/gesture problems that can be isolated from Feed continuity.
+
+Evidence reviewed
+- Actual project sources: V45.2.2, V45.3.3/V45.3.4, V47.1, V49.9, V50.4.
+- V49.9/V50.4 were used as evidence only: their later bridges still replace history.pushState/replaceState and carry broader route/LIVE/comment discovery logic, so those stacks were explicitly not transplanted into this branch.
+- User-supplied original TikTok screenshots covering FYP, profile/search, comments and LIVE.
+- Current public TikTok-web evidence reviewed during this audit:
+  * current automation selectors still expose comment-icon, comment-level-1 and aria-label="exit";
+  * current TikTok page resources still contain "Get the full app experience" / "Open TikTok" strings;
+  * public LIVE links include creator routes shaped like /@username/live and can include a numeric room suffix.
+- No stable narrow selector for the app-promotion sheet was established, so no promotion text scanner or generic modal auto-close was added.
+
+Frozen / unchanged
+- /foryou remains Desktop Chrome Feed identity.
+- Following/Friends stay on the stable desktop feed identity.
+- Search/profile/LIVE/inbox/upload remain mobile secondary identity.
+- Single WebView.
+- wideViewport=false.
+- JavaScriptCanOpenWindowsAutomatically=true.
+- Mixed Content compatibility.
+- V45.2.2 feed CSS geometry before the comment section is byte-for-byte unchanged.
+- No MutationObserver, setInterval, cloneNode, history monkey patch, GeckoView, persistent feed scanner, poster stripping, or whole-page redraw.
+- Existing bounded cold-start media recovery is unchanged.
+- Long-press ~430ms -> 2x and horizontal seek remain limited to the centered real /foryou video.
+
+Source-confirmed repairs in V45.3.5
+1. Preserve desktop Feed identity while a comment opens a post-detail route.
+   TikTok can push the current Feed post to /video/... or /photo/... while the real comment DOM is opening. Previously that route looked like a normal secondary page and could trigger a Mobile-UA reload, destroying the comment sheet. shouldOverrideUrlLoading, applyWebMode and routeChanged now preserve the desktop Feed/comment presentation only while commentOpen is true on that detail route.
+
+2. Comment intent survives detail-route mount delay.
+   Before a visible comment node has appeared, repeated misses no longer clear commentOpen while the explicit desktop /video or /photo detail route is still mounting. Once a real sheet has been seen, disappearance still clears state quickly.
+
+2b. Comment-open intent is published before the UI-thread styling work.
+   The JavaScript bridge callback can race TikTok's default click navigation. commentOpen is now volatile and is set immediately in the bridge call, while DOM/shell work remains posted to the UI thread. That lets shouldOverrideUrlLoading see the intended comment transition instead of briefly treating it as an ordinary mobile detail route. A close publishes false immediately as well; a queued open UI task exits if the sheet was already closed.
+
+3. Back closes comments before their underlying route.
+   Comment state now has higher priority than Search/LIVE/mobile-secondary back handling. On a comment detail route, Back first returns through WebView history; on an in-place sheet it clicks a close control only inside the visible sheet wrapper. A failed close does not falsify native state.
+
+4. SPA route identity is reconciled in doUpdateVisitedHistory() without duplicating the route.
+   TikTok frequently changes profile/detail/search routes with History API transitions that do not invoke shouldOverrideUrlLoading. The existing WebView history callback now compares the actual route with the required browser identity. When a same-document SPA route has already occupied the correct history entry, reloadCurrentRouteWithIdentity() changes only the UA and reloads that current entry instead of loadUrl(target), avoiding an extra same-profile/detail history step. Android WebView may restart an in-flight page when the UA changes; a settled page receives an explicit reload(). The open desktop comment-detail route is the only deliberate exception. No JavaScript history monkey patch was added.
+
+5. Search/profile Back preserves the actual originating Feed route.
+   The 260ms search/mobile Back reconciliation no longer blindly reloads /foryou. If WebView history restores a Feed route such as /following or /friends while the UA is still Mobile, that exact current route is reloaded under Desktop identity. If doUpdateVisitedHistory already restored Desktop identity, the delayed check leaves it alone. returnToHomeClean() remains only the no-history/invalid-route fallback.
+
+6. Gesture UI is exact-/foryou scoped and hidden globally otherwise.
+   The injected progress and 2x nodes have a global display:none baseline and become visible only under tk-native-foryou. Following/Friends or a SPA secondary route cannot expose a stale raw 2x node or previous progress line.
+
+7. Invalid/new-video metadata clears progress.
+   If the newly centered video has no finite duration/currentTime yet, updateProgress no longer leaves the prior post's line visible; it clears progress until valid metadata arrives.
+
+8. Comment text receives only narrow verified light-sheet corrections.
+   Current web selector evidence includes data-e2e="comment-level-1", comment-content and comment-username. Only those verified text nodes are forced dark under the light comment sheet; there is no whole-subtree recolor.
+
+9. LIVE route classification is narrowed.
+   Old contains("/live") behavior also classified unrelated TikTok /live/... resource pages as an immersive room. V45.3.5 recognizes only /live, /@user/live with optional numeric room suffix, and numeric /live/<id> routes.
+
+10. LIVE aspect ratio is protected.
+    The mobile LIVE video is fit with object-fit: contain rather than forcing cover, preventing wrapper CSS from cropping/warping a landscape source while preserving full-screen room bounds.
+
+11. LIVE fallback cannot click generic Next/Previous controls.
+    The previous generic button-text fallback could hit product carousels, dialogs or comment controls. TikTok's real touch handling always gets first chance; if the room fingerprint remains unchanged, the fallback only scrolls the real visible video's vertical ancestor (or the page scroller).
+
+12. No document-wide LIVE class scan.
+    The fallback no longer querySelectorAll-scans wildcard LIVE class names. It follows only the visible video's ancestor chain, consistent with the no-large-DOM-scanner rule.
+
+13. Comment-presence checking is a singleton bounded chain.
+    Fast open -> close -> reopen could previously leave an older 450ms delayed check alive beside the new cycle. scheduleCommentCheck() now removes the prior Runnable before posting the next one, and every explicit comment exit/navigation clears the pending check plus seen/miss state. There is still no setInterval or MutationObserver.
+
+14. Hidden/preloaded videos cannot own FYP progress or 2x control.
+    TikTok may retain video elements in preloaded or mixed photo/video cards. largestVisibleVideo() and visibleEnough453() now reject display:none, visibility:hidden and effectively transparent videos before area/center selection. This prevents a hidden video from repainting the prior progress line or receiving long-press playback-rate control on an image/photo post.
+
+Current static gates
+- app/build.gradle: versionCode 1109 / versionName 45.3.5.
+- Single WebView.
+- No MutationObserver / setInterval / cloneNode / JS History API replacement.
+- Exactly one preventDefault() path, confined to active horizontal progress seeking.
+- No generic LIVE next/previous button scanner.
+- No wildcard document-wide LIVE class scan.
+- Comment-presence polling has at most one queued Runnable and exists only while commentOpen is true.
+- Hidden/preloaded videos are filtered before FYP progress/2x targeting.
+- bridge_hook.js still has only three querySelectorAll call sites; compared with V45.2.2, the former wildcard LIVE-class and generic button scans were removed and the count is now occupied by narrow comment candidates plus video selection.
+- Feed CSS geometry prefix SHA256 equals V45.2.2: 63ea301f29339cc06496b27208305e5d9ec0cc7103d853d2435cc724e5d243e0.
+- bridge_hook.js parses with node --check.
+- Android XML files parse successfully.
+- Java delimiter counts are balanced; javac parse attempt reached Android SDK symbol resolution with no syntax diagnostic before missing Android classes.
+- No Gradle build was run by the assistant.
+
+Intentionally not changed without stronger evidence
+- Desktop Feed data/UA and TikTok's vertical scroll ownership.
+- FYP card geometry/action rail/caption region.
+- Native search/profile DOM beyond route identity and the real mobile web page.
+- "Get the full app experience" removal. The strings are confirmed current, but generic modal-close or text matching can close login/captcha and is rejected without a promotion-specific stable selector.
+- A native transition cover/black frame. Single-WebView page replacement can briefly retain the previous frame until commit; masking it without device-timing evidence risks replacing that with a worse white/black flash.
+- Any new persistent observer/timer.
+
+Validation status
+- Static/source audit candidate only. It is intentionally not described as a proven final original-TikTok replica until a later concentrated real-device validation covers infinite mixed Feed, comment open/close/back, profile/search return, LIVE room switching, progress drag and long-press 2x.

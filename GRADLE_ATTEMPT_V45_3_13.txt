@@ -1,0 +1,7 @@
+TikTokNative V45.3.13 Gradle attempt
+Date: 2026-10-02
+
+$ gradle --no-daemon --stacktrace :app:assembleDebug
+LOCAL_ENV_BLOCKED: gradle executable is not installed in this runtime.
+Android SDK is also not installed in this runtime.
+The bundled GitHub Actions workflow uses setup-android@v4 + Gradle 8.9 and is the intended full compile gate.

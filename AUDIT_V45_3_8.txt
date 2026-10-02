@@ -1,0 +1,82 @@
+TikTokNative V45.3.8 ROUTE RETURN / STATE LOCK
+Date: 2026-10-02
+
+Baseline
+- Actual complete project: V45.3.7 BACK / MEDIA RECOVERY LOCK, reconstructed from the user's V45.3.5 complete project and the V45.3.6/V45.3.7 audited deltas.
+- This pass continues the V45.2.2/V45.3.x stable branch. It does not rebase to V49/V50/V52/V54.
+- No Gradle build was run.
+
+Frozen / preserved
+- Single WebView.
+- Desktop Chrome identity for /foryou, /following and /friends.
+- Mobile identity for search/profile/LIVE/inbox/upload and other secondary routes.
+- wideViewport=false.
+- TikTok owns normal vertical Feed scrolling and playback.
+- V45.2.2 Feed CSS geometry before the comment section remains byte-for-byte unchanged.
+- No MutationObserver, setInterval, cloneNode, JavaScript History API replacement, GeckoView, dual WebView, persistent Feed scanner, poster stripping, or whole-page redraw.
+- Long press ~430 ms -> 2x and horizontal seek remain exact-/foryou scoped.
+- V45.3.6 promotion suppression and nav-live-only entry resolution remain unchanged.
+- V45.3.7 hidden-video/card filtering remains unchanged.
+
+Source-confirmed repairs in V45.3.8
+1. LIVE close returns to the real origin instead of hard-resetting to /foryou.
+   V45.3.7 sent every LIVE Back/close through returnToHomeClean(), so entering LIVE from /following, /friends, Search/profile, or another valid TikTok page discarded the actual origin. V45.3.8 inspects WebView's real back/forward list and jumps to the nearest previous trusted non-LIVE TikTok entry.
+
+2. LIVE close skips prior LIVE-room history entries.
+   Vertical room switching can create more than one LIVE history entry. A simple one-step web.goBack() can therefore move to the previous room instead of exiting LIVE. The bounded history scan skips LIVE entries and targets the nearest previous non-LIVE TikTok page. If no trusted non-LIVE history entry exists, the existing clean /foryou fallback is retained.
+
+3. Visible LIVE close and Android Back share the same route-aware exit path.
+   The native secondary button no longer has a special hard-home LIVE branch. It delegates to onBackPressed(), which now performs the bounded LIVE-history exit above.
+
+4. SPA/main-frame route state no longer leaves mobileLiveMode stale.
+   V45.3.7 could leave mobileLiveMode=true after a same-Mobile-UA route moved out of LIVE, because the flag was updated only by a subset of navigation paths. That stale flag could make a later Back act like a LIVE close. shouldOverrideUrlLoading(), onPageStarted(), doUpdateVisitedHistory(), history reconciliation and updateShellForUrl() now synchronize LIVE state from the actual current route.
+
+5. SPA route changes clear stale Search transient state.
+   TikTok can change routes through History API without onPageStarted(). V45.3.7's doUpdateVisitedHistory() reconciled UA identity but did not clear searchTransient when the SPA left /search. V45.3.8 clears it whenever the actual navigated route is no longer Search, while preserving the in-place Search-overlay case that is explicitly announced by the bridge.
+
+6. Own-profile state survives photo-detail posts, not only video-detail posts.
+   V45.3.7 preserved ownProfileRoute through /video/... but cleared it on /photo/.... Returning from one of the user's own photo posts could therefore be misclassified as an external profile and lose the expected profile bottom state. The preservation gate now uses the existing isPostDetailUrl() definition for both video and photo details.
+
+7. Returning from Mobile secondary pages gets a bounded visible-player wake without Feed auto-advance.
+   V45.3.7's first-card recovery is intentionally cold-start-only. After Search/profile/LIVE returns to a Desktop Feed entry, the restored visible video could remain paused while firstCardRecoveryScheduled prevented another cold-start sequence. V45.3.8 marks only Mobile->Desktop Feed identity returns and issues two bounded visible-video play() wakes after restore. It never scrolls or advances the Feed.
+
+8. Return/resume wake now covers /following and /friends as well as /foryou.
+   The playback wake helper itself was artificially exact-/foryou limited even though the same Desktop Feed engine is used for Following/Friends. The helper is now Desktop-Feed scoped; the automatic first-card stall/advance logic remains /foryou-only. App onResume performs one bounded wake on whichever Desktop Feed tab is actually active.
+
+9. Renderer rebuild discards transient DOM state and re-arms bounded recovery correctly.
+   After a WebView render-process loss, commentOpen/searchTransient/feed recovery state could describe DOM that no longer exists. Rebuild now clears comment presence state, derives Search/LIVE state from the restore URL, re-arms /foryou cold-start recovery, and marks Following/Friends for the non-advancing return wake.
+
+10. Route classification uses TikTok path components instead of whole-URL substring matching.
+    The old helpers could misclassify query strings and, importantly, did not treat a root TikTok URL with query parameters as a Feed route even though isForYouUrl() treated the same path as For You. V45.3.8 adds a trusted TikTok page-path parser and path-bound checks for Feed, Discover, Search, Upload, Shop, Inbox and post detail routes. Query parameters no longer control shell identity.
+
+Public-web evidence rechecked on 2026-10-02
+- Current uBlock/EasyList TikTok notification filters still expose webapp_first_open_cta plus DivFooterGuide / DivFloatButtonWrapper, so the narrow V45.3.6 app-promotion guard remains justified and unchanged.
+- Recent public TikTok automation selectors still expose comment-icon, comment-level-1/comment-content/comment-username, comment-list and aria-label="exit", so no broader comment text/modal scanner was introduced.
+- Public LIVE links still use /@username/live style routes; the V45.3.5 narrowed LIVE route classifier remains appropriate.
+
+Static gates
+- app/build.gradle: versionCode 1112 / versionName 45.3.8.
+- Single WebView constructor.
+- bridge_hook.js parses with node --check.
+- Android XML resources parse successfully.
+- CSS braces balanced.
+- Java braces/parens balanced.
+- javac parse pass reaches Android SDK symbol-resolution errors only; no syntax diagnostics such as illegal start, expected token, unclosed construct, or unexpected end were found.
+- bridge_hook.js: MutationObserver=0, setInterval=0, cloneNode=0, JS pushState replacement=0, JS replaceState replacement=0.
+- Exactly one preventDefault() path remains, confined to active horizontal progress seeking.
+- bridge_hook.js querySelectorAll count remains 3.
+- No generic LIVE next/previous button clicker and no wildcard document-wide LIVE class scan.
+- MainActivity no longer contains a generic a[href*="/live/"] navigation selector.
+- Feed CSS geometry prefix SHA256 (bytes before "/* Comments remain") remains 63ea301f29339cc06496b27208305e5d9ec0cc7103d853d2435cc724e5d243e0, identical to the recorded V45.2.2 baseline.
+
+Intentionally unchanged
+- Desktop Feed UA/data path and TikTok's ordinary vertical swipe ownership.
+- Feed card geometry/action rail/caption placement.
+- object-fit and other frozen V45.2.2 Feed visual geometry.
+- Comment route/state strategy except for route-state reconciliation around navigation.
+- TikTok mobile secondary-page DOM; the wrapper still uses the real page instead of recreating Search/profile/LIVE UI.
+- LIVE gesture fallback still lets TikTok touch handling act first and has no generic button clicker.
+- No transition-cover/black-frame masking without device-timing evidence.
+
+Validation status
+- Static/source-audited candidate only. No Gradle build was run and no claim is made that it is a proven final original-TikTok replica. The next concentrated real-device validation should focus on: long mixed Feed scrolling; return from Search/profile/video/photo detail to the exact originating Feed tab; own-profile photo post -> Back; LIVE enter -> switch several rooms -> close back to the original page; background/resume on Following/Friends; comments open/close/back; progress drag and long-press 2x.

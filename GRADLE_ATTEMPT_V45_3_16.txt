@@ -1,0 +1,4 @@
+
+Gradle availability:
+gradle: command not found in this runtime
+./gradlew: not present in project

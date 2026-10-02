@@ -1,0 +1,63 @@
+TikTokNative V45.3.7 BACK / MEDIA RECOVERY LOCK
+Date: 2026-10-02
+
+Baseline
+- Actual complete project supplied by user: V45.3.5 COMMENT ROUTE / LIVE / GESTURE LOCK.
+- V45.3.6 changes were reconstructed from the prior audit state and re-applied directly to the complete V45.3.5 source.
+- V45.3.7 continues from that reconstructed source; it does not rebase to V49/V50/V52/V54.
+- No Gradle build was run.
+
+Frozen / preserved
+- Single WebView.
+- Desktop Chrome identity for /foryou, /following and /friends.
+- Mobile identity for search/profile/LIVE/inbox/upload and other secondary routes.
+- wideViewport=false.
+- V45.2.2 feed CSS geometry before the comment section remains byte-for-byte unchanged.
+- TikTok owns normal vertical feed scrolling and playback.
+- No MutationObserver, setInterval, cloneNode, JavaScript History API replacement, GeckoView, dual WebView, persistent feed scanner, poster stripping, or whole-page redraw.
+- Long press ~430 ms -> 2x and horizontal seek remain exact-/foryou scoped.
+
+Recovered V45.3.6 repairs
+1. Narrow web-app promotion suppression.
+   Current public filter-list evidence for TikTok identifies the sessionStorage key webapp_first_open_cta and the styled-component wrappers DivFooterGuide / DivFloatButtonWrapper. The hook sets only that known session value, and CSS hides only those named wrappers inside tk-native-app. There is no text scanner and no generic modal/close-button clicker.
+
+2. LIVE top-entry resolution no longer takes the first arbitrary /live link in the document.
+   V45.3.5 queried generic live anchors before/alongside nav-live, so a creator LIVE card in the Feed could be mistaken for TikTok's LIVE navigation destination. V45.3.6 now resolves only [data-e2e="nav-live"] and its own anchor. If that verified nav node cannot yield a link, the native shell falls back directly to https://www.tiktok.com/live.
+
+3. LIVE swipe fallback ignores interactive controls.
+   V45.3.5 armed its room-switch fallback for any one-finger touch in LIVE, including touches that started on links, buttons, inputs or text entry. V45.3.6 adds an explicit interactive target guard plus an armed state; touches on a/link/button/input/textarea/select/role=button/contenteditable never participate in the fallback. touchcancel also clears the pending gesture state.
+
+New V45.3.7 source-confirmed repairs
+4. Visible secondary Back now uses the same back state machine as Android Back.
+   The native secondaryBack icon was wired directly to returnToHomeClean(), while hardware Back already had route-aware logic for comment/search/mobile-secondary/history restoration. This meant tapping the visible Back icon could discard Search/profile/detail history and jump straight to /foryou. The icon now delegates to onBackPressed(), so the visible and hardware Back paths share the same state/history behavior.
+
+5. Cold-start/resume playback recovery rejects hidden or effectively transparent videos.
+   The feed gesture layer already filtered display:none, visibility:hidden and near-zero-opacity media, but Java's bounded kickVisibleFeedPlayback() still chose the largest video only by geometry. A preloaded/hidden video with a large rect could therefore receive play() instead of the current visible card. The bounded recovery scan now applies the same style-visibility gate before area ranking.
+
+6. First-card stall inspection uses the same visibility gate for the current article/video and its next-card candidate.
+   inspectFirstCardStall() previously treated geometry alone as visible and could classify a hidden/preloaded media node as healthy or as a valid recovery target. A local visibleNode() check now excludes display:none, visibility:hidden and near-zero-opacity article/video nodes. This stays inside the existing bounded cold-start recovery path; no new timer or observer was introduced.
+
+Static gates
+- app/build.gradle: versionCode 1111 / versionName 45.3.7.
+- Exactly one WebView constructor in MainActivity.
+- bridge_hook.js parses with node --check.
+- Android XML resources parse successfully.
+- Java braces/parens are balanced; javac reaches Android SDK symbol-resolution errors with no syntax diagnostic before the missing Android classes.
+- bridge_hook.js: MutationObserver=0, setInterval=0, cloneNode=0, JS pushState replacement=0, JS replaceState replacement=0.
+- Exactly one preventDefault() path remains, confined to active horizontal progress seeking.
+- bridge_hook.js querySelectorAll count remains 3; no new document-wide scanner was added.
+- LIVE top action no longer contains a generic a[href*="/live/"] selector in MainActivity.
+- LIVE fallback has no generic next/previous button clicker and no wildcard class scan.
+- Promotion guard has no text matching and no generic dialog close action.
+- Feed CSS geometry prefix SHA256 (bytes before "/* Comments remain") remains 63ea301f29339cc06496b27208305e5d9ec0cc7103d853d2435cc724e5d243e0, identical to the recorded V45.2.2 baseline.
+
+Intentionally unchanged
+- Feed card geometry/action rail/caption placement.
+- Desktop Feed UA/data path and TikTok's ordinary vertical swipe ownership.
+- Comment route/state logic from V45.3.5.
+- Search/profile mobile DOM beyond route identity and real TikTok mobile pages.
+- LIVE room switching still lets TikTok's own touch behavior act first; the fallback only runs if the room fingerprint did not change.
+- No transition cover/black-frame masking without device timing evidence.
+
+Validation status
+- Static/source-audited candidate only. It should not be described as a proven final original-TikTok replica until real-device validation covers long mixed-feed scrolling, app-promotion recurrence, comment open/close/back, visible secondary Back from Search/profile/detail, LIVE room switching while using chat/input controls, progress dragging and long-press 2x.

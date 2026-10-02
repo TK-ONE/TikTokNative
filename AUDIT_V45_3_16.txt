@@ -1,0 +1,56 @@
+TikTokNative V45.3.16 TIKTOK ICON / STARTUP SPLASH LOCK
+Date: 2026-10-02
+
+Baseline
+- Actual complete project: V45.3.15 ORIGINAL MOBILE REFERENCE LOCK / GitHub-ready.
+- User supplied a real TikTok mobile recording and explicitly requested the launcher icon and startup waiting page to follow that recording.
+- Feed/navigation/comment/LIVE behavior from V45.3.15 is intentionally not changed in this revision.
+
+Reference observations from the supplied recording
+- Launcher: black rounded-square app tile with the cyan/red/white TikTok note centered at a relatively large visual size.
+- Startup: pure black screen with the colored TikTok note centered above a white TikTok wordmark; no feed chrome is visible while waiting.
+- Startup transitions directly into the feed once content is ready.
+
+V45.3.16 changes
+1. Launcher icon proportion lock.
+   - Adaptive icon foreground mark scale is increased from 0.62 to 0.68 so the note occupies the icon more like the supplied reference.
+   - Legacy ic_launcher.png and ic_launcher_round.png are enlarged by ~9.5% around center while preserving black background and TikTok cyan/red/white mark colors.
+   - Application label remains TikTok.
+
+2. Startup waiting page now mirrors the supplied TikTok reference.
+   - splash_background.xml is now a black layer-list with the centered TikTok brand asset.
+   - New splash_brand.png contains the colored TikTok note above a white TikTok wordmark on transparency.
+   - MainActivity adds a full-screen black startup overlay containing the same centered brand, so the brand does not disappear while WebView is still preparing the first page.
+
+3. Startup dismissal is content-bound and bounded.
+   - The startup overlay dismisses only after a trusted TikTok main-frame page reaches onPageCommitVisible/onPageFinished, then fades out in 120 ms after a short 180 ms settle.
+   - A 12-second bounded escape prevents a network failure from leaving the splash permanently stuck.
+   - No recurring timer or observer was added.
+
+4. Android 12+ system splash is aligned.
+   - values-v31 Theme.TikShell sets black system splash background, TikTok note animated icon, and zero system splash animation duration.
+   - This reduces the default-system-splash flash before the in-app TikTok note + wordmark waiting page.
+
+Frozen / unchanged
+- mobile_shell.css is byte-for-byte unchanged from V45.3.15.
+- bridge_hook.js is byte-for-byte unchanged from V45.3.15.
+- V45.3.14 recent /foryou post-ID dedup remains unchanged.
+- V45.3.15 top tabs, LIVE control, caption tuning and comment-shell behavior remain unchanged.
+- Single WebView, Desktop Feed UA, Mobile secondary UA, feed scroll ownership and route/back state machine are unchanged.
+
+Static validation
+- app/build.gradle: versionCode 1120 / versionName 45.3.16.
+- GitHub Actions artifact name updated to TikTokNative-V45.3.16-debug.
+- setup-android remains android-actions/setup-android@v4.
+- bridge_hook.js: node --check PASS.
+- 15 Android XML resources/manifest parse successfully.
+- MainActivity.java delimiter audit PASS (string/comment aware).
+- mobile_shell.css SHA256: 67cfe300a3459587bc8e9963cbf21a1a18321e290fce44bb7f08b0576a83ec22 (unchanged from V45.3.15).
+- bridge_hook.js SHA256: 328533bcaa66458aa7b6a681b47094c9cfedb3aa44a09566a80f02e3806333de (unchanged from V45.3.15).
+- launcher PNG SHA256: 01233159f4915a92933864d6d2f0811e9cea42c0490dcfbac6f3783f34ed7d2e.
+- splash_brand.png SHA256: a1d406754944feecc0f75a49d4a4ba6bcbdc45bd7eb319e034da28d738363572.
+
+Gradle status
+- A local Gradle attempt was made after the final source edits.
+- This runtime still has no gradle executable and the project intentionally has no ./gradlew, so local Android compilation cannot enter the Gradle build phase here.
+- GitHub Actions remains the intended compiler path and is already encoded for Gradle 8.9 / JDK 17 / Android SDK 35.

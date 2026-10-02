@@ -1,0 +1,54 @@
+TikTokNative V45.3.14 RECENT FEED DEDUP LOCK
+Date: 2026-10-02
+
+Baseline
+- Actual complete project: V45.3.13 MOBILE FEED FINAL TUNE / GitHub-ready.
+- Continues V45.2.2/V45.3.x stable branch.
+- No rebase to V49/V50/V52/V54.
+
+User-visible problem targeted
+- Repeated exact For You posts can reappear across app launches/days even though cookies and WebStorage are preserved.
+- V45.3.x deliberately reloads a clean Desktop /foryou route after Activity/process recreation instead of restoring a serialized Feed DOM, because restoring the old DOM can literally replay the same rendered cards. The clean request is safer for feed continuity, but TikTok Web can still return some of the same recent posts.
+
+V45.3.14 repair
+1. Added a small local exact-post freshness memory for /foryou only.
+   - Post IDs are numeric TikTok /video/<id> or /photo/<id> IDs extracted only from the currently centered real Feed card.
+   - Window: 72 hours.
+   - Maximum retained IDs: 500.
+   - Storage: private SharedPreferences; no account data, captions, creators or media URLs are stored.
+   - Writes are batched and flushed on pause/destroy.
+
+2. Exact-repeat handling is intentionally bounded.
+   - If the centered /foryou card is an exact ID seen recently, the wrapper advances by one Feed viewport.
+   - At most two recent exact repeats can be auto-advanced consecutively before the guard stops and leaves TikTok/user in control.
+   - A 15-minute grace prevents the same currently-viewed card, immediate back-scroll, duplicate play events, or repeated lifecycle callbacks from being treated as a stale repeat.
+   - Similar-but-different content is NOT suppressed; only the exact TikTok post ID is considered a duplicate.
+
+3. No recommendation replacement or feed scraper was added.
+   - TikTok still supplies the feed and owns vertical scrolling/playback.
+   - No API interception, no custom recommendation engine, no content downloading, no account-cookie clearing.
+   - Cookies, DOM storage and TikTok recommendation signals remain preserved.
+
+4. Existing visual/feed work remains frozen.
+   - V45.3.13 mobile shell CSS is byte-for-byte unchanged.
+   - V45.3.13 shop-icon sizing, bottom video lift and caption corrections are untouched.
+   - V45.3.12 video aspect handling is untouched.
+   - Comment/LIVE/profile/search/history state-machine logic is untouched except for the new isolated bridge method.
+
+Static validation
+- app/build.gradle: versionCode 1118 / versionName 45.3.14.
+- GitHub workflow uses android-actions/setup-android@v4 and Gradle 8.9.
+- bridge_hook.js passes node --check.
+- 14 Android XML resources parse successfully.
+- Java javac parse attempt reaches missing Android SDK/package symbols with no syntax-pattern diagnostics.
+- bridge_hook.js: MutationObserver=0, setInterval=0, cloneNode=0, history.pushState=0, history.replaceState=0.
+- querySelectorAll count remains 3.
+- preventDefault count remains 1.
+- mobile_shell.css SHA256: 606853bf4c6a154193758adf2fa39b383c5af94940d9d566f75c5a5072ec7f66 (byte-identical to V45.3.13).
+- MainActivity.java SHA256: 33b915972814b315f187faf42b8c227f801169cfca64c600028d9a726c63c2af.
+- bridge_hook.js SHA256: 328533bcaa66458aa7b6a681b47094c9cfedb3aa44a09566a80f02e3806333de.
+
+Expected effect / limitation
+- Should materially reduce exact videos/photos that the user already saw in the last ~3 days when they reappear in For You.
+- It cannot force TikTok's server to recommend different topics, creators or visually similar clips. If the user is logged out or the TikTok Web recommendation pool for the current region/session is narrow, semantically similar content can still recur.
+- This build needs real-device validation for: a known repeated post auto-advances once, new posts remain untouched, back-scroll does not get chased, two-repeat cap works, long Feed scrolling stays continuous.

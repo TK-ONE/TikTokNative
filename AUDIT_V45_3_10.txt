@@ -1,0 +1,70 @@
+TikTokNative V45.3.10 COMMENT / PROFILE / BACK STATE LOCK
+Date: 2026-10-02
+
+Baseline
+- Actual complete project: V45.3.9 PROFILE / FEED RECOVERY LOCK.
+- Continues the V45.2.2/V45.3.x stable branch; no rebase to V49/V50/V52/V54.
+- No Gradle build was run.
+
+Frozen / preserved
+- Single WebView.
+- Desktop Chrome identity for /foryou, /following and /friends.
+- Mobile identity for search/profile/LIVE/inbox/upload and other secondary routes.
+- wideViewport=false and the existing WebView presentation contract.
+- TikTok owns ordinary vertical Feed scrolling and playback.
+- mobile_shell.css is byte-for-byte unchanged from V45.3.9, so the frozen V45.2.2 Feed geometry is untouched.
+- No MutationObserver, setInterval, cloneNode, JavaScript History API replacement, dual WebView, GeckoView, persistent Feed scanner, poster stripping, or whole-page redraw.
+- Long press ~430 ms -> 2x and horizontal seek remain exact-/foryou scoped.
+- V45.3.5 comment/LIVE narrowing, V45.3.6 promotion suppression, V45.3.7 hidden-media filtering, V45.3.8 route-return state logic and V45.3.9 Feed/profile recovery remain intact.
+
+Source-confirmed repairs in V45.3.10
+1. Failed desktop comment-detail opens can no longer leave a permanent polling loop.
+   V45.3.9 intentionally kept commentOpen alive without a miss limit whenever a Feed comment click had promoted the current post to a desktop /video or /photo route. If TikTok never mounted the real comment DOM because of a failed request, login gate, changed markup or blocked sheet, commentOpen could remain true forever and the singleton 450 ms presence check could keep rescheduling indefinitely. V45.3.10 keeps the short normal miss limit (8) and gives a desktop detail-route comment a much longer but finite 36-miss grace window (~16.2 s). If no real sheet appears, state and polling are released and the shell is restored.
+
+2. Top-level mobile destinations no longer get an extra floating native Back button.
+   The old secondaryBack rule included every mobileSecondary route. Because Shop, Inbox, the user's own Profile and Discover/Community are top-level destinations with native bottom navigation, they could receive an unnecessary floating Back overlay in addition to their real page controls. V45.3.10 suppresses that wrapper Back control for those top-level destinations while retaining Back for Search, upload/detail pages, external creator profiles and other nested mobile routes; LIVE keeps its close control.
+
+3. Own-profile identity now survives own Profile -> another creator -> Back.
+   V45.3.9 correctly stopped post/photo links from being misclassified as external profiles, but visiting a genuinely different bare /@creator profile still cleared ownProfileRoute with no way to recognize the user's own profile when WebView history returned to it. V45.3.10 records the canonical bare profile path when the native Profile tab resolves, preserves that identity while visiting another creator, and restores ownProfileRoute when history comes back to the recorded path.
+
+4. Profile-path comparison is canonicalized.
+   TikTok can represent the same bare profile as /@user or /@user/. V45.3.10 lowercases through the existing URL path parser and removes one trailing slash before storing/comparing the own-profile path, so an otherwise identical history return is not treated as an external profile merely because of slash form.
+
+5. Java and JavaScript now use the same narrow definition of a profile route.
+   The Java classifier previously accepted any /@... descendant except /video and /photo, while the bridge already limited ownership changes to a bare /@user path. V45.3.10 tightens Java to the same bare-profile contract. /@user/live and other descendants are no longer profile routes by accident.
+
+6. Clicking a link to the profile already being viewed no longer clears ownership.
+   The bridge now compares the clicked bare profile path with location.pathname (ignoring one trailing slash). A self-link on the current profile does not call externalProfileOpened(); a genuinely different creator still does.
+
+7. External-profile ownership is published before default anchor navigation.
+   JavascriptInterface callbacks can race the anchor's default navigation. V45.3.10 publishes ownProfileRoute=false / externalProfileRoute=true immediately in the bridge callback (the same intent-first principle already used by commentOpen), then posts only the visual shell work to the UI thread. The flags are volatile so shouldOverrideUrlLoading/updateShellForUrl cannot capture the new creator path as the user's own profile during that race.
+
+8. Own-profile identity survives Activity/process recreation.
+   own_profile_path is saved alongside own_profile and restored with WebView state. Feed recreation rules remain unchanged; no serialized Feed DOM is restored.
+
+Static gates
+- app/build.gradle: versionCode 1114 / versionName 45.3.10.
+- Single WebView constructor.
+- bridge_hook.js parses with node --check.
+- 14 Android XML resources parse successfully.
+- Java raw brace and parenthesis counts are balanced.
+- javac parse attempt reaches missing Android SDK symbols only; no syntax-pattern diagnostic such as illegal start, expected token, unclosed construct, or unexpected end was found.
+- bridge_hook.js: MutationObserver=0, setInterval=0, cloneNode=0, JavaScript History API replacement=0.
+- Exactly one preventDefault() path remains, confined to active horizontal progress seeking.
+- bridge_hook.js querySelectorAll count remains 3.
+- No generic LIVE next/previous clicker and no wildcard document-wide LIVE class scan.
+- mobile_shell.css SHA256: c51442c38fea974271096ff9107e6c6565ad6e706a925acd333a1a8f23729557 and is byte-for-byte identical to V45.3.9.
+- The previously recorded frozen V45.2.2 Feed geometry prefix SHA256 therefore remains 63ea301f29339cc06496b27208305e5d9ec0cc7103d853d2435cc724e5d243e0.
+
+Intentionally unchanged
+- Desktop Feed UA/data path and TikTok's ordinary vertical swipe ownership.
+- Feed card geometry, video fit, action rail, caption placement and top/bottom shell measurements.
+- TikTok mobile secondary-page DOM; Search/profile/LIVE remain real TikTok pages rather than recreated native pages.
+- LIVE room-switch fallback and LIVE close-to-origin history logic.
+- Existing bounded first-card recovery and returned-Feed wake logic.
+- No transition-cover/black-frame masking without device-timing evidence.
+- No broad text scanner or generic modal closer for app-promotion UI.
+
+Validation status
+- Static/source-audited candidate only. No Gradle build was run.
+- Highest-value real-device checks remain: long mixed Feed scrolling; own Profile -> post -> Back; own Profile -> other creator -> Back; top-level Shop/Inbox/Profile/Community must not show the wrapper floating Back; comment open failure/login gate must recover without leaving the shell hidden; Search/profile/LIVE return to the exact origin; LIVE multi-room switch/close; progress drag and long-press 2x.

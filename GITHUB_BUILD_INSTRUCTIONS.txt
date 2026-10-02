@@ -1,0 +1,17 @@
+TikTokNative V45.3.16 GitHub Actions build-ready package
+
+Required toolchain encoded in project/workflow:
+- Android Gradle Plugin 8.7.3
+- Gradle 8.9
+- JDK 17
+- compileSdk / targetSdk 35
+- minSdk 26
+
+This package intentionally does not rely on ./gradlew.
+GitHub Actions installs Gradle 8.9 directly, installs Android platform 35/build-tools 35.0.0, then runs:
+  gradle --no-daemon --stacktrace :app:assembleDebug
+
+After a successful Actions run, download artifact:
+  TikTokNative-V45.3.16-debug
+APK inside:
+  app-debug.apk

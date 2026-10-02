@@ -1,0 +1,34 @@
+TikTokNative V45.3.13 MOBILE FEED FINAL VISUAL TUNE
+Date: 2026-10-02
+
+Baseline
+- Actual source baseline: V45.3.12 MOBILE VIDEO ASPECT-FIT LOCK / GitHub-build-ready project.
+- Continues the V45.2.2/V45.3.x stable single-WebView branch.
+- User-device visual feedback is the evidence for this pass: Shop icon appears undersized, the video canvas reaches slightly into the bottom navigation, and the lower-left copy block still needs cleanup.
+
+Changes
+1. Shop bottom-navigation glyph apparent size increased without changing the shared nav cell size.
+   ic_shop.xml keeps a 25dp viewport but scales its original bag path 1.15x around the center. Home/Inbox/Profile view dimensions stay unchanged.
+2. Video canvas lifted by a narrow 6px bottom guard.
+   The article remains exactly 100dvh, preserving TikTok's paging geometry. Only feed-video height is reduced by 6px and aligned to the top, leaving article black behind the native navigation gradient instead of media leaking into it.
+3. Feed copy block no longer inherits desktop clipping dimensions.
+   The existing TikTok DivMediaCardOverlayBottomSection is kept; width/min-width/overflow are normalized for the phone canvas.
+4. Caption handling is narrowed to current TikTok E2E anchors.
+   video-desc / browse-video-desc wrap normally and clamp cleanly at two lines instead of being hard-cut. video-author-uniqueid / feed-video-nickname and video-music remain single-line ellipsis. No text is rewritten or cloned.
+5. GitHub Android setup workflow updated from android-actions/setup-android@v3 to @v4 after the observed cmdline-tools 16.0 setup failure. Artifact label updated to V45.3.13.
+
+Frozen / unchanged
+- Single WebView.
+- Desktop Feed identity for /foryou /following /friends.
+- Mobile identity for Search/profile/LIVE/inbox/upload/secondary routes.
+- Article height remains 100dvh; normal vertical scrolling remains TikTok-owned.
+- Right action rail geometry unchanged.
+- Top navigation geometry unchanged.
+- Native bottom-navigation cell geometry unchanged.
+- Comment/LIVE routing and state machines unchanged.
+- Progress drag / long-press 2x logic unchanged.
+- No MutationObserver, setInterval, cloneNode or History API replacement.
+
+Version
+- versionCode 1117
+- versionName 45.3.13

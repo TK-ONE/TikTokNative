@@ -1,0 +1,65 @@
+TikTokNative V45.3.12 MOBILE VIDEO ASPECT-FIT LOCK
+Date: 2026-10-02
+
+Baseline
+- Actual complete project: V45.3.11 PROFILE IDENTITY / HISTORY RETURN LOCK.
+- Continues the stable V45.2.2/V45.3.x branch; no rebase to V49/V50/V52/V54.
+- User priority for this pass: improve mobile video-feed match first, then run Gradle.
+
+What remains frozen
+- Single WebView.
+- Desktop Chrome identity for /foryou, /following and /friends.
+- Mobile identity for Search/profile/LIVE/inbox/upload and secondary routes.
+- TikTok owns ordinary vertical Feed scrolling and playback.
+- Top shell measurements/tabs are unchanged.
+- Bottom shell measurements/items are unchanged.
+- Action-rail placement is unchanged.
+- Caption/music placement is unchanged.
+- Comment/LIVE CSS and route/back state logic are unchanged.
+- Existing white progress seek and ~430 ms long-press 2x behavior are unchanged.
+- No MutationObserver, setInterval, DOM cloning, JS History replacement or persistent Feed scanner.
+
+Source-confirmed mobile-video repair in V45.3.12
+1. The old Feed rule forced object-fit:cover on every video regardless of source aspect.
+   This is acceptable for the approved portrait/fullscreen path but destructively crops wider media.
+
+2. V45.3.12 keeps the approved portrait geometry and only changes media fit by intrinsic aspect.
+   - 9:16-or-taller portrait content keeps object-fit:cover.
+   - Media wider than the native 9:16 canvas uses object-fit:contain on a black canvas so the full frame remains visible rather than being aggressively side-cropped.
+   - object-position stays centered.
+
+3. Aspect detection does not own the Feed.
+   - It only reads videoWidth/videoHeight after normal media lifecycle events.
+   - loadedmetadata/play tag the real TikTok <video> element.
+   - Two bounded startup passes cover an already-playing first card.
+   - No per-swipe scan was added; later cards are handled by normal media events.
+   - No play(), pause(), scroll, snap, navigation or DOM replacement is introduced.
+
+4. The approved V45.3.11 CSS is an exact byte-identical prefix of V45.3.12.
+   The aspect-fit block is appended at the end, so no previous top/bottom/action/caption/comment/LIVE geometry rule was edited in place.
+
+Static validation
+- app/build.gradle: versionCode 1116 / versionName 45.3.12.
+- bridge_hook.js: node --check passes.
+- 14 Android XML resources parse successfully.
+- Java source logic is unchanged except the version header comment; delimiter/source parse gate still reaches missing Android symbols without syntax-pattern diagnostics.
+- Existing V45.3.11 mobile_shell.css SHA256 prefix remains c51442c38fea974271096ff9107e6c6565ad6e706a925acd333a1a8f23729557.
+- bridge_hook.js forbidden/expensive constructs remain: MutationObserver=0, setInterval=0, cloneNode=0, history.pushState=0, history.replaceState=0.
+- querySelectorAll remains 3.
+- preventDefault remains 1 and is still confined to active horizontal seeking.
+
+Gradle build attempt
+- A Gradle build was attempted after the V45.3.12 source changes.
+- This execution environment has Java 21, but the supplied project does not contain gradlew or gradle-wrapper.jar; it contains only gradle/wrapper/gradle-wrapper.properties.
+- No system Gradle executable is installed here.
+- ANDROID_HOME / ANDROID_SDK_ROOT are also not present.
+- Therefore ./gradlew assembleDebug exits 127 (gradlew missing) and gradle assembleDebug exits 127 (gradle command not found) before source compilation begins.
+- The exact command/output transcript is saved as GRADLE_BUILD_V45_3_12.txt.
+- This is an environment/toolchain absence, not a Gradle compile pass or a Gradle compile failure from project source. Do not claim the APK is build-verified from this environment.
+
+Highest-value real-device validation after an actual Android build
+- Normal 9:16 portrait post: still fills like V45.3.11.
+- 4:5 / square / landscape post: full source frame remains visible with black letterbox instead of aggressive crop.
+- Long mixed Feed scrolling remains continuous.
+- Action rail/caption remain aligned over both cover and contain media.
+- Progress drag and 2x long-press still target only the centered real video.

@@ -1,0 +1,595 @@
+/* V44.0 reference-locked presentation layer.
+   It keeps TikTok's actual feed/actions/metadata, and only removes the desktop chrome
+   plus applies phone-shaped presentation. No DOM cloning, no MutationObserver. */
+
+html.tk-native-app,
+html.tk-native-app body {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  background: #000 !important;
+  overflow-x: hidden !important;
+}
+
+html.tk-native-app div[class*="DivSideNavPlaceholderContainer"] {
+  display: none !important;
+}
+
+/* The native top shell replaces TikTok's desktop header only on feed/discover.
+   Secondary pages keep TikTok's own page-specific header/back/search controls. */
+html.tk-native-feed div#app-header,
+html.tk-native-discover div#app-header {
+  display: none !important;
+}
+
+html.tk-native-primary div#app-header,
+html.tk-native-app:not(.tk-native-feed):not(.tk-native-discover) div#app-header {
+  width: 100vw !important;
+  max-width: 100vw !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+
+html.tk-native-app main[id^="main-content"],
+html.tk-native-app div[class*="BaseBodyContainer"] {
+  width: 100vw !important;
+  max-width: 100vw !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+html.tk-native-primary main[id^="main-content"] {
+  padding-bottom: 72px !important;
+  box-sizing: border-box !important;
+}
+
+/* Home feed: use the real TikTok article/action/metadata nodes, only present them like phone UI. */
+html.tk-native-feed #column-list-container {
+  width: 100vw !important;
+  max-width: 100vw !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  align-items: stretch !important;
+}
+
+html.tk-native-feed article[data-e2e="recommend-list-item-container"] {
+  position: relative !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+  min-width: 100vw !important;
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  max-height: 100dvh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #000 !important;
+  border-radius: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+html.tk-native-feed article[data-e2e="recommend-list-item-container"] > div[class*="DivContentFlexLayout"] {
+  position: relative !important;
+  width: 100% !important;
+  max-width: none !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  gap: 0 !important;
+}
+
+html.tk-native-feed article[data-e2e="recommend-list-item-container"] section[data-e2e="feed-video"] {
+  position: relative !important;
+  width: 100% !important;
+  max-width: none !important;
+  height: 100% !important;
+  max-height: none !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  overflow: hidden !important;
+  flex: 1 1 100% !important;
+}
+
+html.tk-native-feed article[data-e2e="recommend-list-item-container"] section[data-e2e="feed-video"] video {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: cover !important;
+  border-radius: 0 !important;
+}
+
+/* Keep TikTok's own live counts and real buttons; only place the existing action rail where the phone app has it. */
+html.tk-native-feed article[data-e2e="recommend-list-item-container"] section[class*="SectionActionBarContainer"] {
+  position: absolute !important;
+  right: 8px !important;
+  bottom: 86px !important;
+  z-index: 80 !important;
+  margin: 0 !important;
+}
+
+/* Keep TikTok's real author/caption/music; position its existing overlay in the mobile lower-left area. */
+html.tk-native-feed article[data-e2e="recommend-list-item-container"] div[class*="DivMediaCardOverlayBottomSection"] {
+  position: absolute !important;
+  left: 12px !important;
+  right: 76px !important;
+  bottom: 76px !important;
+  z-index: 70 !important;
+  margin: 0 !important;
+  max-width: none !important;
+}
+
+/* Desktop hover/player chrome is not part of the supplied phone reference. */
+html.tk-native-feed article[data-e2e="recommend-list-item-container"] div[class*="DivMediaCardOverlayTop"],
+html.tk-native-feed article[data-e2e="recommend-list-item-container"] div[class*="DivVideoProgressContainer"] {
+  display: none !important;
+}
+
+/* Comments remain TikTok's real comment DOM, but present as the supplied mobile bottom sheet.
+   Pure CSS means closing the sheet cannot leave inline width/background pollution behind. */
+html.tk-native-feed.tk-native-comment-open div:has(> div[data-e2e="search-comment-container"]),
+html.tk-native-feed.tk-native-comment-open div:has(> [data-e2e="comment-list"]) {
+  position: fixed !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  top: auto !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+  height: 68dvh !important;
+  max-height: 68dvh !important;
+  margin: 0 !important;
+  border-radius: 16px 16px 0 0 !important;
+  overflow: hidden !important;
+  background: #fff !important;
+  color: #161823 !important;
+  color-scheme: light !important;
+  z-index: 2147483000 !important;
+  box-sizing: border-box !important;
+}
+
+html.tk-native-feed.tk-native-comment-open [data-e2e="search-comment-container"],
+html.tk-native-feed.tk-native-comment-open [data-e2e="comment-list"] {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  background: #fff !important;
+  color: #161823 !important;
+  color-scheme: light !important;
+}
+
+
+/* V45.3.3: the supplied original TikTok reference uses a light mobile comment sheet.
+   Freeze the feed behind a real visible sheet and let text/icons inherit the light surface. */
+html.tk-native-feed.tk-native-comment-open,
+html.tk-native-feed.tk-native-comment-open body {
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+}
+html.tk-native-feed.tk-native-comment-open #tk-feed-progress-453,
+html.tk-native-feed.tk-native-comment-open #tk-speed-badge-453 {
+  display: none !important;
+}
+html.tk-native-feed.tk-native-comment-open [data-e2e="search-comment-container"],
+html.tk-native-feed.tk-native-comment-open [data-e2e="comment-list"] {
+  background: #fff !important;
+  color: #161823 !important;
+}
+html.tk-native-feed.tk-native-comment-open [data-e2e="search-comment-container"] input,
+html.tk-native-feed.tk-native-comment-open [data-e2e="search-comment-container"] textarea,
+html.tk-native-feed.tk-native-comment-open [data-e2e="comment-list"] input,
+html.tk-native-feed.tk-native-comment-open [data-e2e="comment-list"] textarea {
+  color: #161823 !important;
+  background: #f1f1f2 !important;
+  caret-color: #fe2c55 !important;
+}
+/* Current TikTok Web still exposes narrow comment text/user hooks. Keep only
+   those verified text nodes dark on the supplied light mobile sheet; do not
+   recolor the whole subtree or iconography. */
+html.tk-native-feed.tk-native-comment-open [data-e2e="comment-level-1"],
+html.tk-native-feed.tk-native-comment-open [data-e2e="comment-content"],
+html.tk-native-feed.tk-native-comment-open [data-e2e="comment-username"] {
+  color: #161823 !important;
+}
+
+
+/* V44.1 secondary-state hardening. Home/Feed rules above are frozen.
+   Discover is an immersive secondary page in the supplied original-app reference. */
+html.tk-native-discover,
+html.tk-native-discover body {
+  background: #000 !important;
+}
+html.tk-native-discover main[id^="main-content"],
+html.tk-native-discover div[class*="BaseBodyContainer"] {
+  width: 100vw !important;
+  max-width: 100vw !important;
+  margin: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* V44.2 secondary pages: keep functional TikTok page controls, remove desktop width assumptions,
+   and leave room only for our bottom bar on primary destinations. */
+html.tk-native-primary,
+html.tk-native-primary body {
+  width: 100% !important;
+  max-width: 100vw !important;
+  overflow-x: hidden !important;
+}
+
+html.tk-native-primary main[id^="main-content"],
+html.tk-native-primary div[class*="BaseBodyContainer"] {
+  width: 100vw !important;
+  max-width: 100vw !important;
+  min-width: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  box-sizing: border-box !important;
+}
+
+
+/* V44.3 LIVE: secondary LIVE uses a mobile UA and this class only removes any
+   desktop side-navigation remnants that survive TikTok redirects. */
+html.tk-native-live,
+html.tk-native-live body {
+  width: 100% !important;
+  max-width: 100vw !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow-x: hidden !important;
+  background: #000 !important;
+}
+
+html.tk-native-live div[class*="SideNav"],
+html.tk-native-live div[class*="side-nav"],
+html.tk-native-live div[class*="DesktopNav"],
+html.tk-native-live div[class*="desktop-nav"] {
+  display: none !important;
+}
+
+html.tk-native-live main[id^="main-content"],
+html.tk-native-live div[class*="BaseBodyContainer"],
+html.tk-native-live div[class*="LiveRoom"],
+html.tk-native-live div[class*="live-room"] {
+  width: 100vw !important;
+  max-width: 100vw !important;
+  min-width: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* ============================================================
+   V45.0 MOBILE-FIRST SECONDARY PAGES
+   Home/For You rules above are frozen from the user-confirmed layout.
+   Secondary routes now run under a real Android/Mobile UA; these rules only
+   remove desktop leftovers and respect phone viewport/safe-area geometry.
+   ============================================================ */
+html.tk-native-mobile-secondary,
+html.tk-native-mobile-secondary body {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100vw !important;
+  min-width: 0 !important;
+  max-width: 100vw !important;
+  min-height: 100dvh !important;
+  background: #000 !important;
+  overflow-x: hidden !important;
+  overscroll-behavior-x: none !important;
+  -webkit-text-size-adjust: 100% !important;
+}
+
+html.tk-native-mobile-secondary div[class*="SideNav"],
+html.tk-native-mobile-secondary div[class*="side-nav"],
+html.tk-native-mobile-secondary div[class*="DesktopNav"],
+html.tk-native-mobile-secondary div[class*="desktop-nav"],
+html.tk-native-mobile-secondary div[class*="LeftContainer"],
+html.tk-native-mobile-secondary div[class*="NavPlaceholder"] {
+  display: none !important;
+}
+
+html.tk-native-mobile-secondary main[id^="main-content"],
+html.tk-native-mobile-secondary div[class*="BaseBodyContainer"] {
+  width: 100vw !important;
+  max-width: 100vw !important;
+  min-width: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* Primary destinations keep our native bottom navigation, so remove only an
+   extra web bottom bar if TikTok serves one under the mobile UA. */
+html.tk-native-mobile-secondary.tk-native-primary nav[role="navigation"][class*="Bottom"],
+html.tk-native-mobile-secondary.tk-native-primary div[class*="BottomNav"],
+html.tk-native-mobile-secondary.tk-native-primary div[class*="TabBar"] {
+  display: none !important;
+}
+
+/* ============================================================
+   V45.0 LIVE -- original-app style immersive room.
+   TikTok's own mobile controls/chat are preserved. Only layout chrome is removed.
+   ============================================================ */
+html.tk-native-live,
+html.tk-native-live body {
+  width: 100vw !important;
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  max-height: 100dvh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #000 !important;
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+}
+
+html.tk-native-live div#app-header,
+html.tk-native-live header,
+html.tk-native-live div[class*="SideNav"],
+html.tk-native-live div[class*="side-nav"],
+html.tk-native-live div[class*="DesktopNav"],
+html.tk-native-live div[class*="desktop-nav"],
+html.tk-native-live div[class*="LiveListContainer"]:has(> div[class*="LiveRoom"]),
+html.tk-native-live aside {
+  max-width: 100vw !important;
+}
+
+html.tk-native-live main[id^="main-content"],
+html.tk-native-live div[class*="BaseBodyContainer"],
+html.tk-native-live div[class*="LiveRoom"],
+html.tk-native-live div[class*="live-room"],
+html.tk-native-live div[class*="LivePlayer"],
+html.tk-native-live div[class*="live-player"] {
+  position: relative !important;
+  width: 100vw !important;
+  min-width: 100vw !important;
+  max-width: 100vw !important;
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  max-height: 100dvh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  box-sizing: border-box !important;
+}
+
+html.tk-native-live video {
+  width: 100vw !important;
+  height: 100dvh !important;
+  min-width: 100vw !important;
+  min-height: 100dvh !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  border-radius: 0 !important;
+}
+
+/* Remove obvious desktop split-pane wrappers without touching TikTok's mobile
+   chat/room overlays. This prevents the half-screen LIVE regression. */
+html.tk-native-live div[class*="SplitLayout"],
+html.tk-native-live div[class*="TwoColumn"],
+html.tk-native-live div[class*="ContentWrapper"] {
+  width: 100vw !important;
+  max-width: 100vw !important;
+  margin: 0 !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+html.tk-native-live div[class*="LiveSidebar"],
+html.tk-native-live div[class*="live-sidebar"],
+html.tk-native-live div[class*="RecommendLiveList"] {
+  display: none !important;
+}
+
+/* V45 final LIVE desktop-chrome suppression; keep TikTok mobile live header/overlays. */
+html.tk-native-live div#app-header,
+html.tk-native-live div[class*="SideNav"],
+html.tk-native-live div[class*="side-nav"],
+html.tk-native-live div[class*="DesktopNav"],
+html.tk-native-live div[class*="desktop-nav"] {
+  display: none !important;
+}
+
+/* V45.3.5: injected gesture nodes are hidden outside the exact /foryou mode.
+   This prevents a SPA route from briefly exposing the raw "2×" div or stale seek UI. */
+#tk-feed-progress-453,
+#tk-speed-badge-453 {
+  display: none !important;
+}
+
+/* ============================================================
+   V45.3.2 STABILITY-LOCK FEED GESTURE UI
+   Baseline feed geometry above is byte-for-byte V45.2.2.
+   This block only draws the optional white seek line / 2x badge.
+   It is scoped to the feed route and deliberately sits below the
+   real TikTok comment sheet z-index.
+   ============================================================ */
+html.tk-native-foryou #tk-feed-progress-453 {
+  display: block !important;
+  position: fixed !important;
+  left: 12px !important;
+  right: 12px !important;
+  bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important;
+  height: 14px !important;
+  z-index: 2147482000 !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+}
+html.tk-native-foryou #tk-feed-progress-453.tk-ready {
+  opacity: 0.92 !important;
+}
+html.tk-native-foryou #tk-feed-progress-track-453 {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 4px !important;
+  height: 2px !important;
+  border-radius: 2px !important;
+  background: rgba(255,255,255,0.28) !important;
+  overflow: hidden !important;
+}
+html.tk-native-foryou #tk-feed-progress-453.tk-seeking #tk-feed-progress-track-453 {
+  height: 3px !important;
+  background: rgba(255,255,255,0.42) !important;
+}
+html.tk-native-foryou #tk-feed-progress-fill-453 {
+  width: 0%;
+  height: 100% !important;
+  border-radius: inherit !important;
+  background: #fff !important;
+}
+html.tk-native-foryou #tk-speed-badge-453 {
+  position: fixed !important;
+  left: calc(50% - 30px) !important;
+  top: 17% !important;
+  width: 60px !important;
+  padding: 7px 0 !important;
+  border-radius: 16px !important;
+  text-align: center !important;
+  background: rgba(0,0,0,0.68) !important;
+  color: #fff !important;
+  font: 700 14px/1 sans-serif !important;
+  z-index: 2147482001 !important;
+  pointer-events: none !important;
+  display: none !important;
+}
+html.tk-native-foryou #tk-speed-badge-453.tk-show {
+  display: block !important;
+}
+
+/* ============================================================
+   V45.3.6 WEB-APP PROMOTION GUARD
+   Current filter-list evidence identifies these TikTok-specific styled-component
+   wrappers for the mobile/web "open app" promotion. Hide only those named
+   wrappers inside our app presentation; never match text or generic dialogs.
+   ============================================================ */
+html.tk-native-app div[class*="DivFooterGuide"],
+html.tk-native-app div[class*="DivFloatButtonWrapper"] {
+  display: none !important;
+}
+
+
+
+/* ============================================================
+   V45.3.12 MOBILE VIDEO ASPECT-FIT LOCK
+   Preserve the user-approved V45.2.2/V45.3.x feed geometry and shell.
+   Media wider than the native 9:16 canvas is switched to contain so the full frame stays
+   visible with black letterbox, matching the supplied mobile reference.
+   Portrait media remains on the frozen cover behavior.
+   ============================================================ */
+html.tk-native-feed article[data-e2e="recommend-list-item-container"] section[data-e2e="feed-video"] {
+  background: #000 !important;
+}
+html.tk-native-feed article[data-e2e="recommend-list-item-container"] section[data-e2e="feed-video"] video.tk-native-media-cover-45312 {
+  object-fit: cover !important;
+  object-position: center center !important;
+}
+html.tk-native-feed article[data-e2e="recommend-list-item-container"] section[data-e2e="feed-video"] video.tk-native-media-contain-45312 {
+  object-fit: contain !important;
+  object-position: center center !important;
+  background: #000 !important;
+}
+
+
+/* ============================================================
+   V45.3.13 MOBILE FEED FINAL VISUAL TUNE
+   User-device evidence: the Shop glyph reads smaller than peer nav icons,
+   the media canvas reaches slightly too far into the native bottom-nav gradient,
+   and feed copy can inherit desktop clipping. Keep the frozen card geometry and
+   TikTok DOM; only apply small presentation corrections.
+   ============================================================ */
+/* Lift only the visible media canvas by reserving a thin black guard above the
+   native bottom navigation. The article remains exactly 100dvh, so TikTok keeps
+   ownership of vertical paging/snap and continuous-feed geometry. */
+html.tk-native-feed article[data-e2e="recommend-list-item-container"] section[data-e2e="feed-video"] {
+  height: calc(100% - 6px) !important;
+  min-height: 0 !important;
+  align-self: flex-start !important;
+}
+
+/* Keep the real TikTok author/caption/music nodes, but remove desktop truncation
+   behavior that can cut the mobile copy block. */
+html.tk-native-feed article[data-e2e="recommend-list-item-container"] div[class*="DivMediaCardOverlayBottomSection"] {
+  min-width: 0 !important;
+  width: auto !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+
+html.tk-native-feed article[data-e2e="recommend-list-item-container"] [data-e2e="video-author-uniqueid"],
+html.tk-native-feed article[data-e2e="recommend-list-item-container"] [data-e2e="feed-video-nickname"] {
+  max-width: 100% !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  line-height: 1.25 !important;
+}
+
+html.tk-native-feed article[data-e2e="recommend-list-item-container"] [data-e2e="video-desc"],
+html.tk-native-feed article[data-e2e="recommend-list-item-container"] [data-e2e="browse-video-desc"] {
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+  max-width: 100% !important;
+  max-height: 2.7em !important;
+  line-height: 1.35 !important;
+  white-space: normal !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  overflow-wrap: anywhere !important;
+}
+
+html.tk-native-feed article[data-e2e="recommend-list-item-container"] [data-e2e="video-music"] {
+  max-width: 100% !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* ============================================================
+   V45.3.15 ORIGINAL-MOBILE-VIDEO REFERENCE TUNE
+   Grounded in the user-supplied 2026-10-02 original TikTok recording.
+   Keep the existing feed geometry/player/scroll ownership. Only refine the
+   lower-left copy block to the spacing/typography visible in that reference.
+   ============================================================ */
+html.tk-native-feed article[data-e2e="recommend-list-item-container"] div[class*="DivMediaCardOverlayBottomSection"] {
+  left: 12px !important;
+  right: 74px !important;
+  bottom: 88px !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.65) !important;
+}
+
+html.tk-native-feed article[data-e2e="recommend-list-item-container"] [data-e2e="video-author-uniqueid"],
+html.tk-native-feed article[data-e2e="recommend-list-item-container"] [data-e2e="feed-video-nickname"] {
+  font-size: 16px !important;
+  line-height: 20px !important;
+  font-weight: 700 !important;
+  margin: 0 0 5px 0 !important;
+  color: #fff !important;
+}
+
+html.tk-native-feed article[data-e2e="recommend-list-item-container"] [data-e2e="video-desc"],
+html.tk-native-feed article[data-e2e="recommend-list-item-container"] [data-e2e="browse-video-desc"] {
+  font-size: 14px !important;
+  line-height: 19px !important;
+  font-weight: 500 !important;
+  color: #fff !important;
+  margin: 0 !important;
+}
+
+html.tk-native-feed article[data-e2e="recommend-list-item-container"] [data-e2e="video-music"] {
+  font-size: 13px !important;
+  line-height: 18px !important;
+  font-weight: 500 !important;
+  color: #fff !important;
+  margin-top: 5px !important;
+}

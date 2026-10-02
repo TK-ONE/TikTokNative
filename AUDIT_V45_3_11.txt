@@ -1,0 +1,78 @@
+TikTokNative V45.3.11 PROFILE IDENTITY / HISTORY RETURN LOCK
+Date: 2026-10-02
+
+Baseline
+- Actual complete project: V45.3.10 COMMENT / PROFILE / BACK STATE LOCK.
+- Continues the V45.2.2/V45.3.x stable branch; no rebase to V49/V50/V52/V54.
+- No Gradle build was run.
+
+Frozen / byte-identical
+- Single WebView.
+- Desktop Chrome identity for /foryou, /following and /friends.
+- Mobile identity for Search/profile/LIVE/inbox/upload and secondary routes.
+- wideViewport=false.
+- TikTok still owns normal vertical Feed scrolling and playback.
+- mobile_shell.css is byte-for-byte identical to V45.3.10.
+- bridge_hook.js is byte-for-byte identical to V45.3.10.
+- No Feed geometry, action rail, caption placement, comment CSS, LIVE CSS, progress/2x gesture code or promotion guard was changed.
+
+Source-confirmed repairs in V45.3.11
+1. Own-profile identity can no longer be overwritten by an unobserved SPA/history transition to another bare creator profile.
+   V45.3.10 correctly recorded ownProfilePath, but updateShellForUrl() still trusted ownProfileRoute=true unconditionally and overwrote ownProfilePath with whatever bare /@user route arrived next. The click bridge normally publishes externalProfileOpened() first, but scripted navigation, history restoration or a route transition not originating from that click hook could bypass it. V45.3.11 makes the recorded own path authoritative once learned: a different bare profile switches to external-profile state instead of replacing the user's identity.
+
+2. Returning to the recorded own profile remains self-healing.
+   If a different creator is open and WebView history returns to the stored ownProfilePath, ownProfileRoute is restored and the external Back state is cleared. /@user and /@user/ still compare canonically.
+
+3. The fixed 260 ms / 280 ms Back reconciliation race is removed.
+   V45.3.10 read web.getUrl() once 260 ms after ordinary mobile/comment Back, and 280 ms after LIVE close. On a slow WebView/history restore this could still be the departure route or transiently blank; the comment-detail branch could then hard-reset to /foryou even though legitimate history navigation was still in progress. V45.3.11 captures the expected history destination before goBack()/goBackOrForward() and uses a bounded reconciliation window instead of treating one timer as authoritative.
+
+4. Slow valid history restoration no longer triggers a Home reset.
+   The bounded reconciliation checks at 180 ms and then up to three delayed retries. It only reconciles when the current trusted TikTok route matches the expected destination. A blank/stale route is ignored; after the bounded window WebViewClient callbacks remain authoritative. There is no persistent timer or observer.
+
+5. Comment-detail Back now uses the same history-return state machine as Search/profile/mobile secondary Back.
+   The old comment branch had its own fixed-delay URL read and unique fallback behavior. It now captures the actual previous history item, performs Back, and enters the shared bounded reconciliation path. This removes a divergent race-prone path.
+
+6. LIVE close keeps its nearest trusted non-LIVE destination, but reconciliation is now destination-locked.
+   V45.3.8's logic for skipping earlier LIVE-room history is preserved. V45.3.11 additionally remembers the exact non-LIVE target selected from WebBackForwardList and waits for that target before applying UA/shell reconciliation.
+
+7. Search history with the same pathname is no longer falsely considered complete.
+   /search?q=A and /search?q=B share the same pathname. A path-only comparison could see the still-visible departure query as the expected destination. V45.3.11 includes q (or keyword) in Search history identity while leaving path-addressed TikTok routes unchanged.
+
+8. Pending history reconciliation is generation-fenced and cancelled by explicit navigation/reload/rebuild.
+   A new native navigation, UA identity reload, clean Home load, renderer rebuild or Activity destruction invalidates older delayed reconciliation work. This prevents a stale Back callback from repainting shell state after the user has already moved elsewhere.
+
+Static validation
+- app/build.gradle: versionCode 1115 / versionName 45.3.11.
+- bridge_hook.js: node --check passes.
+- 14 Android XML resources parse successfully.
+- Java delimiters pass a string/comment-aware balance audit.
+- javac source parse reaches missing Android SDK/package symbols; no syntax-pattern diagnostics were found (no illegal start, expected token, unclosed construct, unexpected EOF, etc.).
+- Single WebView constructor remains.
+- bridge_hook.js: MutationObserver=0, setInterval=0, cloneNode=0, history.pushState=0, history.replaceState=0.
+- querySelectorAll count remains 3.
+- preventDefault count remains 1 and is still confined to active horizontal seek.
+- mobile_shell.css SHA256: c51442c38fea974271096ff9107e6c6565ad6e706a925acd333a1a8f23729557 (byte-identical to V45.3.10).
+- bridge_hook.js SHA256: 10b01517072cf65acf9d068cb250727a955c621a5dc9909123685da9757bd2df (byte-identical to V45.3.10).
+- The previously frozen V45.2.2 Feed geometry prefix remains untouched.
+- No Gradle build was run.
+
+Reasoning/state checks performed
+- First native Profile resolution with ownProfilePath=null records the actual bare profile.
+- Known own profile -> different bare creator cannot overwrite ownProfilePath.
+- External creator -> recorded own path restores ownProfileRoute.
+- /@user and /@user/ remain equivalent.
+- /search?q=A and /search?q=B are distinct expected history states.
+- A stale/blank getUrl() during Back never calls returnToHomeClean() from the bounded reconciler.
+
+Intentionally unchanged
+- Desktop Feed UA/data path and ordinary TikTok vertical swipe ownership.
+- Feed card geometry and V45.2.2/V45.3.x visual shell.
+- Existing bounded first-card recovery and returned-Feed wake logic.
+- Comment DOM/CSS selectors and finite V45.3.10 comment miss limits.
+- LIVE room swipe fallback and immersive mobile LIVE layout.
+- Promotion suppression remains the narrow V45.3.6 implementation.
+- No transition-cover/black-frame masking without device timing evidence.
+
+Validation status
+- Static/source-audited candidate only. No Gradle build and no real-device claim.
+- Highest-value later device checks: own Profile -> another creator through a scripted/SPA route -> Back; slow Search/profile/comment-detail Back; LIVE multi-room -> close to exact origin; repeated Search query Back; long mixed Feed scrolling; progress drag and long-press 2x.

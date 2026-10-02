@@ -1,0 +1,29 @@
+TikTokNative V45.3.17 VIDEO REFERENCED ICON / SPLASH LOCK
+Date: 2026-10-02
+
+Baseline
+- Based on V45.3.16 TIKTOK ICON / SPLASH LOCK.
+- No route/state/feed logic changes.
+- No Gradle build was run in this environment.
+
+What changed
+1. Reworked launcher icon to more closely match the user video reference.
+   - Kept a black rounded-square base.
+   - Reduced the note mark size and recentered it to better match the reference home-screen icon proportions.
+   - Applied the same icon to ic_launcher.png and ic_launcher_round.png.
+2. Reworked splash brand artwork to more closely match the user video reference.
+   - Smaller centered note mark.
+   - Smaller centered TikTok wordmark below.
+   - Layout now more closely matches the user-recorded startup screen instead of the previous oversized custom composition.
+3. Reduced Android 12+ splash adaptive foreground icon scale from 0.68 to 0.62 to better match the recorded startup icon size.
+4. Version bump only: versionCode 1121 / versionName 45.3.17.
+
+Intentionally unchanged
+- Feed layout, top bar, bottom bar, caption layout, comments, LIVE, repeat-video dedup and startup hold/fade logic.
+- GitHub Actions build workflow.
+
+Static checks
+- app/build.gradle updated to versionCode 1121 / versionName 45.3.17.
+- Launcher raster icons updated.
+- splash_brand.png updated.
+- ic_launcher_foreground.xml updated.

@@ -1,0 +1,20 @@
+Reference baseline: TikTokNative V45.2.2 FIRST_SCREEN_PLAYBACK_FIX
+V45.3.0: isolated progress/2x gestures only
+V45.3.1: rejected after deep audit because broad visual-fit CSS changed feed wrapper geometry
+V45.3.2: V45.2.2 geometry/engine + isolated feed gestures + route/z-index containment
+V45.3.3: media/comment fidelity lock; photo-card protection, bounded first-card recovery, light visible-comment state
+V45.3.4: small state-lock delta only: comment visibility/back-close, search transient routing, commit-time presentation injection, bounded post-snap progress cleanup
+
+Hard rule: V49/V50 remain evidence/reference sources only. Do not wholesale transplant their bridge/CSS/navigation stack into this branch.
+V45.3.5: comment-detail race/back lock + history-preserving SPA UA reconciliation + exact-FYP gesture containment + hidden-video filtering + narrowed LIVE route/scroll fallback; still preserves V45.2.2 feed geometry/data path
+V45.3.6: narrow current TikTok web-app promotion suppression + nav-live-only entry resolution + LIVE interactive-touch exclusion
+V45.3.7: visible native secondary Back delegates to the same history/state logic as hardware Back; bounded cold-start/resume media recovery rejects hidden/transparent videos/cards
+V45.3.8: route-return/state lock: LIVE close skips prior LIVE room history and returns to the nearest trusted non-LIVE origin; SPA route state is synchronized; own-profile photo-detail ownership is preserved; desktop feed wake is bounded on return/resume; route classification uses TikTok path rather than whole-URL substring matching
+V45.3.9: own-profile post-link ownership lock + clean restore for every desktop Feed tab + generation-fenced cold-start recovery + identity-aware intent/download handoff
+V45.3.10: finite comment-detail presence grace + top-level mobile Back suppression + canonical own-profile route persistence/recovery
+V45.3.11: own-profile path cannot be overwritten by scripted/history navigation to another creator; comment/mobile/LIVE history return uses bounded expected-destination reconciliation instead of one fixed 260/280 ms read; /search history distinguishes query state
+V45.3.12: preserve the approved feed shell/geometry; add intrinsic-aspect tagging so source media wider than 9:16 uses contain/black letterbox while 9:16-or-taller portrait keeps the frozen cover path; no new feed ownership or persistent scanner
+V45.3.13: mobile feed final visual tune: shop-icon visual scale, thin media-bottom guard, caption clipping repair; GitHub workflow moved to setup-android@v4
+V45.3.14: exact /foryou post-ID recent-repeat guard, bounded to two auto-advances, without replacing TikTok recommendation
+V45.3.15: user-supplied original TikTok video reference lock: three visible center tabs (社区/关注/推荐), reference-shaped LIVE TV control, original-like caption spacing/typography, and feed shell retained behind desktop-feed comment sheet
+V45.3.16: user-recording icon/startup lock: launcher mark scaled to the supplied TikTok icon proportions; black startup waiting page carries centered colored note + white TikTok wordmark; native splash remains until the first trusted TikTok page becomes visible, with bounded 12s escape; feed CSS/bridge unchanged
